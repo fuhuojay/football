@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>8人制阵容编辑 MVP</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">8人制 · 红绿白三队</p>
+          <h1>阵容编辑 MVP</h1>
+        </div>
+        <div class="status-pill" id="activityStatus">未导入</div>
+      </header>
+
+      <main class="workspace">
+        <nav class="steps" aria-label="流程">
+          <button class="step is-active" data-step="import">1 导入</button>
+          <button class="step" data-step="setup">2 设置</button>
+          <button class="step" data-step="draft">3 选人</button>
+          <button class="step" data-step="lineup">4 阵容</button>
+        </nav>
+
+        <section class="panel is-active" id="panel-import">
+          <div class="section-head">
+            <div>
+              <h2>微信接龙导入</h2>
+              <p>粘贴整段接龙，系统会识别报名名单、门将和 24 人之后的候补。</p>
+            </div>
+            <button class="ghost" id="loadSampleBtn">填入示例</button>
+          </div>
+          <textarea id="relayInput" spellcheck="false" placeholder="粘贴微信接龙文本"></textarea>
+          <div class="actions">
+            <button class="primary" id="parseBtn">解析名单</button>
+            <button class="ghost" id="clearBtn">清空</button>
+          </div>
+          <div class="grid two">
+            <div>
+              <h3>正式报名</h3>
+              <div class="player-list" id="confirmedList"></div>
+            </div>
+            <div>
+              <h3>候补/蹭球</h3>
+              <div class="player-list" id="reserveList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-setup">
+          <div class="section-head">
+            <div>
+              <h2>队长与门将</h2>
+              <p>组织者指定队长、门将池和选人顺序。队长自动成为本队第一名，GK 只能在最后阶段选择。</p>
+            </div>
+            <button class="primary" id="applySetupBtn">保存设置</button>
+          </div>
+          <div class="setup-grid">
+            <div class="setup-card">
+              <h3>队长</h3>
+              <label>红队队长<select id="captain-red"></select></label>
+              <label>绿队队长<select id="captain-green"></select></label>
+              <label>白队队长<select id="captain-white"></select></label>
+            </div>
+            <div class="setup-card">
+              <h3>选人顺序</h3>
+              <label>普通球员顺序<input id="draftOrderInput" value="red,green,white" /></label>
+              <label>门将顺序<input id="gkOrderInput" value="red,green,white" /></label>
+              <p class="hint">可填 red,green,white，自定义循环顺序。</p>
+            </div>
+            <div class="setup-card">
+              <h3>门将池</h3>
+              <div class="player-list compact" id="gkPoolList"></div>
+              <p class="hint">GK 不足 3 人时，可在名单上手动切换 GK。</p>
+            </div>
+          </div>
+          <div class="setup-card full">
+            <h3>名单确认</h3>
+            <div class="player-list edit-list" id="editableList"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-draft">
+          <div class="section-head">
+            <div>
+              <h2>在线选人</h2>
+              <p>每轮 60 秒，超时自动随机选择。普通球员全部选完后，才会按组织者指定顺序选择 GK。</p>
+            </div>
+            <div class="draft-clock">
+              <span id="currentPick">等待开始</span>
+              <strong id="timer">60</strong>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" id="startDraftBtn">开始选人</button>
+            <button class="ghost" id="autoPickBtn">随机当前轮</button>
+            <button class="ghost" id="resetDraftBtn">重置选人</button>
+          </div>
+          <div class="draft-layout">
+            <div class="available">
+              <h3>可选球员</h3>
+              <div class="player-list pick-list" id="availablePlayers"></div>
+            </div>
+            <div class="teams" id="draftTeams"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-lineup">
+          <div class="section-head">
+            <div>
+              <h2>横屏阵容编辑</h2>
+              <p>预设阵型可一键排布，也可自由拖拽。右侧战术板用于安排打法、任务和临场提醒。</p>
+            </div>
+            <div class="actions inline">
+              <button class="ghost" data-formation="3-3-1">3-3-1</button>
+              <button class="ghost" data-formation="2-3-2">2-3-2</button>
+              <button class="ghost" data-formation="3-2-2">3-2-2</button>
+              <button class="ghost" id="resetPositionsBtn">自由重排</button>
+            </div>
+          </div>
+          <div class="lineup-tabs">
+            <button class="team-tab red is-active" data-team="red">红队</button>
+            <button class="team-tab green" data-team="green">绿队</button>
+            <button class="team-tab white" data-team="white">白队</button>
+          </div>
+          <div class="lineup-editor">
+            <div class="pitch" id="pitch" aria-label="球场阵容"></div>
+            <aside class="tactics">
+              <h3 id="tacticsTitle">红队战术板</h3>
+              <div class="tool-grid" aria-label="战术工具">
+                <button class="tool-btn is-active" data-tool="attack">进攻箭头</button>
+                <button class="tool-btn" data-tool="defense">防守回收</button>
+                <button class="tool-btn" data-tool="area">区域框</button>
+                <button class="tool-btn" data-tool="note">文字标注</button>
+                <button class="tool-btn" data-tool="erase">橡皮擦</button>
+              </div>
+              <label>标注文字
+                <input id="annotationText" placeholder="例：边路推进、弱侧包抄、回收保护" />
+              </label>
+              <div class="coach-help">
+                <h3>使用说明</h3>
+                <p>选择箭头工具后，在球场上按住拖动，表示跑位、传球或回收方向。</p>
+                <p>选择区域框后，拖出需要重点控制或保护的区域。</p>
+                <p>选择文字标注后，点击球场放置提醒；选择橡皮擦后点击标注删除。</p>
+                <p>球员姓名仍然可以自由拖拽，战术标注和阵容会按队伍分别保存。</p>
+              </div>
+              <div class="actions inline">
+                <button class="primary" id="saveTacticsBtn">保存战术板</button>
+                <button class="ghost" id="undoBoardBtn">撤销</button>
+                <button class="ghost" id="exportBoardBtn">复制战术</button>
+                <button class="ghost" id="importBoardBtn">导入战术</button>
+                <button class="ghost" id="clearBoardBtn">清空标注</button>
+              </div>
+              <div>
+                <h3>替补/未上场</h3>
+                <div class="bench" id="bench"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
